@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пятнашки</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #puzzle-container {
+            display: grid;
+            gap: 5px;
+            margin: 20px auto;
+            width: 1080px;
+            height: 1080px;
+        }
+        .tile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            background-color: lightblue;
+            border: 1px solid #000;
+            cursor: pointer;
+        }
+        .empty {
+            background-color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Пятнашки</h1>
+    <label for="size">Размер поля:</label>
+    <select id="size">
+        <option value="3">3x3</option>
+        <option value="4" selected>4x4</option>
+        <option value="5">5x5</option>
+    </select>
+    <button onclick="startGame()">Начать игру</button>
+    <div id="puzzle-container"></div>
+
+    <script>
+        let size = 4;
+        let puzzle = [];
+        let emptyTile = { row: size - 1, col: size - 1 };
+
+        document.getElementById('size').addEventListener('change', function() {
+            size = parseInt(this.value);
+            startGame();
+        });
+
+        function isSolvable(numbers) {
+            let inversions = 0;
+            let filtered = numbers.filter(n => n !== null);
+            for (let i = 0; i < filtered.length; i++) {
+                for (let j = i + 1; j < filtered.length; j++) {
+                    if (filtered[i] > filtered[j]) inversions++;
+                }
+            }
+            if (size % 2 === 1) {
+                return inversions % 2 === 0;
+            } else {
+                let emptyRow = Math.floor(numbers.indexOf(null) / size);
+                return (inversions + emptyRow) % 2 === 1;
+            }
+        }
+
+        function startGame() {
+            puzzle = [];
+            let numbers;
+            do {
+                numbers = [...Array(size * size - 1).keys()].map(n => n + 1);
+                numbers.sort(() => Math.random() - 0.5);
+                numbers.push(null);
+            } while (!isSolvable(numbers));
+            emptyTile = { row: size - 1, col: size - 1 };
+            renderPuzzle(numbers);
+        }
+
+        function renderPuzzle(numbers) {
+            const container = document.getElementById('puzzle-container');
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            container.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+            
+            for (let r = 0; r < size; r++) {
+                puzzle[r] = [];
+                for (let c = 0; c < size; c++) {
+                    let value = numbers.shift();
+                    puzzle[r][c] = value;
+                    let tile = document.createElement('div');
+                    tile.className = 'tile' + (value === null ? ' empty' : '');
+                    tile.textContent = value || '';
+                    tile.dataset.row = r;
+                    tile.dataset.col = c;
+                    tile.addEventListener('click', moveTile);
+                    container.appendChild(tile);
+                }
+            }
+        }
+
+        function moveTile(event) {
+            let row = parseInt(event.target.dataset.row);
+            let col = parseInt(event.target.dataset.col);
+            
+            if ((Math.abs(row - emptyTile.row) === 1 && col === emptyTile.col) ||
+                (Math.abs(col - emptyTile.col) === 1 && row === emptyTile.row)) {
+                puzzle[emptyTile.row][emptyTile.col] = puzzle[row][col];
+                puzzle[row][col] = null;
+                emptyTile = { row, col };
+                renderPuzzle(puzzle.flat());
+            }
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
